@@ -6,7 +6,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from rolepermissions.roles import RolesManager
 from rolepermissions.permissions import PermissionsManager
-from rolepermissions.shortcuts import get_user_role, get_permission
+from rolepermissions.shortcuts import get_user_roles, get_permission
 
 
 def has_role(user, roles):
@@ -23,29 +23,43 @@ def has_role(user, roles):
 
         normalized_roles.append(role)
 
-    try:
-        user_role = get_user_role(user)
-    except ObjectDoesNotExist:
-        return False
+    user_roles = get_user_roles(user)
 
-    if not user_role:
-        return False
+    if user_roles:
+        has_roles = True
+        for role in normalized_roles:
+            has_roles = has_roles and role in user_roles
+        return has_roles
 
-    return user_role in normalized_roles
+    return False
 
 
-def has_permission(user, permission_name):
+def has_permission(user, permission_name, role=None):
+    # if superuser return true.
+    # if role and user has permission for the given role return true.
+    # else go through all roles and return true only if user has
+    # permission for all roles
     if user and user.is_superuser:
         return True
 
-    role = get_user_role(user)
+    if role:
+        return __has_permission__(user, permission_name, role)
+    else:
+        _perm = True
 
+        for role in get_user_roles(user):
+            _perm = _perm and __has_permission__(user, permission_name, role)
+
+        return _perm
+
+
+def __has_permission__(user, permission_name, role):
     if role and permission_name in role.permission_names_list():
-        permission = get_permission(permission_name)
+        permission = get_permission(
+            role.get_permission_name(permission_name))
 
         if permission in user.user_permissions.all():
             return True
-
     return False
 
 
@@ -54,6 +68,6 @@ def has_object_permission(checker_name, user, obj):
         return True
 
     checker = PermissionsManager.retrieve_checker(checker_name)
-    role = get_user_role(user)
+    roles = get_user_roles(user)
 
-    return checker(role, user, obj)
+    return checker(roles, user, obj)

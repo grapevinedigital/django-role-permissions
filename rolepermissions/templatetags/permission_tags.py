@@ -4,6 +4,9 @@ from django import template
 
 from rolepermissions.verifications import has_role, has_permission, has_object_permission
 
+from rolepermissions.shortcuts import retrieve_role_safely
+
+from rolepermissions.exceptions import RoleDoesNotExist
 
 register = template.Library()
 
@@ -15,8 +18,18 @@ def has_role_template_tag(user, role):
 
 
 @register.filter(name='can')
-def can_template_tag(user, role):
-    return has_permission(user, role)
+def can_template_tag(user, args):
+    # Throws RoleDoesNotExist if an invalid role has been passed
+    args = args.split(":")
+    permission = args[0]
+    role=None
+    if len(args) > 0:
+        role = retrieve_role_safely(args[1])
+
+        if not role:
+            raise RoleDoesNotExist
+
+    return has_permission(user, permission, role)
 
 
 @register.assignment_tag(name='can', takes_context=True)

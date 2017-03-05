@@ -22,6 +22,8 @@ class RolesManager(object):
         if role_name in registered_roles:
             return registered_roles[role_name]
 
+        return None
+
     @classmethod
     def get_roles_names(cls):
         return registered_roles.keys()
@@ -47,6 +49,10 @@ class AbstractUserRole(object):
         return camelToSnake(cls.__name__)
 
     @classmethod
+    def get_permission_name(cls, permission_name):
+        return "{0}.{1}".format(cls.get_name(), permission_name)
+
+    @classmethod
     def assign_role_to_user(cls, user):
         """
         Deletes all of user's previous roles, and removes all permissions
@@ -55,9 +61,9 @@ class AbstractUserRole(object):
         :returns: :py:class:`django.contrib.auth.models.Group` The group for the
             new role.
         """
-        from rolepermissions.shortcuts import remove_role
-
-        remove_role(user)
+        # max comment: we comment out the following 2 lines since we want to support multiple roles
+        # from rolepermissions.shortcuts import remove_role
+        # remove_role(user)
 
         group, created = Group.objects.get_or_create(name=cls.get_name())
         user.groups.add(group)
@@ -74,7 +80,9 @@ class AbstractUserRole(object):
     @classmethod
     def get_default_true_permissions(cls):
         if hasattr(cls, 'available_permissions'):
-            permission_names = [key for (key, default) in cls.available_permissions.items() if default]
+
+            permission_names = [cls.get_permission_name(key)
+                                for (key, default) in cls.available_permissions.items() if default]
 
             return cls.get_or_create_permissions(permission_names)
 
