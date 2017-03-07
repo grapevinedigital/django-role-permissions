@@ -38,7 +38,7 @@ and check its permissions using
 
     >>> from rolepermissions.verifications import has_permission
     >>>
-    >>> has_permission(user, 'create_medical_record')
+    >>> has_permission(user, 'create_medical_record', 'doctor')
     True
     >>> has_permission(user, 'edit_patient_file')
     False
@@ -49,7 +49,7 @@ You can also change users permissions:
 
     >>> from rolepermissions.shortcuts import grant_permission, revoke_permission
     >>>
-    >>> revoke_permission(user, 'create_medical_record')
+    >>> revoke_permission(user, 'create_medical_record', 'doctor)
     >>> grant_permission(user, 'edit_patient_file')
     >>>
     >>> has_permission(user, 'create_medical_record')

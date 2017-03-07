@@ -7,13 +7,13 @@ Shortcuts
 
 .. function:: get_user_role(user)
 
-Returns the role class of the user.
+Returns the roles classes of the user.
 
 .. code-block:: python
 
-    from rolepermissions.shortcuts import get_user_role
+    from rolepermissions.shortcuts import get_user_roles
 
-    role = get_user_role(user)
+    roles = get_user_roles(user)
 
 .. function:: assign_role(user, role)
 
@@ -27,18 +27,25 @@ Assigns a role to the user. Role parameter can be passed as string or role class
 
 .. function:: remove_role(user)
 
-Remove any role that was assigned to the specified user.
+Remove a role that was assigned to the specified user.
 
 .. code-block:: python
     from rolepermissions.shortcuts import remove_role
 
     remove_role(user)
 
+Remove all roles that was assigned to the specified user.
+
+.. code-block:: python
+    from rolepermissions.shortcuts import remove_all_roles
+
+    remove_all_roles(user)
+
 .. function:: available_perm_status(user)
 
-Returns a dictionary containg all permissions available to the role of the specified user.
-Permissions are the keys of the dictionary, and values are ``True`` or ``False`` indicating if the
-permission is granted or not.
+Returns a dictionary containg all permissions per role available to the role of the specified user.
+Role names are the keys of the dictionary with each role represented by another dictionary with permissions
+as keys. The permissions values are ``True`` or ``False`` indicating if the permission if granted or not.
 
 .. code-block:: python
 
@@ -49,26 +56,36 @@ permission is granted or not.
     if permissions['create_medical_record']:
         print 'user can create medical record'
 
-.. function:: grant_permission(user, permission_name)
+.. function:: grant_permission(user, permission_name, role=None)
 
-Grants a permission to a user. Will not grant a permission that is not listed in the role
+Grants a permission to a user for the given role. If no role passed, it will iterate through all roles of the given
+user and try to grant the permission for each role that has it.
+Will not grant a permission if the user doesn't have the role or the permission is not listed in the role's
 ``available_permissions``.
 
 .. code-block:: python
 
     from rolepermissions.shortcuts import grant_permission
 
+    grant_permission(user, 'create_medical_record', 'doctor')
+    >>> True
     grant_permission(user, 'create_medical_record')
+    >>> True
 
-.. function:: revoke_permission(user, permission_name)
 
-Revokes a permission.
+.. function:: revoke_permission(user, permission_name, role=None)
+
+Revokes a permission for the given role. If no role passed, it will iterate through all roles to remove the permission
+from each role that contains it.
 
 .. code-block:: python
 
     from rolepermissions.shortcuts import revoke_permission
 
+    revoke_permission(user, 'create_medical_record', 'doctor')
+    >>> True
     revoke_permission(user, 'create_medical_record')
+    >>> True
 
 
 Permission and role verification
@@ -89,9 +106,11 @@ object, snake cased string representation or inside a list.
     if has_role(user, [Doctor, 'nurse']):
         print 'User is a Doctor or a nurse'
 
-.. function:: has_permission(user, permission)
+.. function:: has_permission(user, permission, role=None)
 
-Receives a user and a permission and returns ``True`` is the user has ths specified permission.
+Receives a user and a permission and returns ``True`` is the user has ths specified permission for the role given. If no
+role passed it will iterate through all user roles and will check if the user has the given permission for every role
+that has the permission in the available_permissions list.
 
 .. code-block:: python
 
@@ -100,6 +119,10 @@ Receives a user and a permission and returns ``True`` is the user has ths specif
     from records.models import MedicalRecord
 
     if has_permission(user, 'create_medical_record'):
+        medical_record = MedicalRecord(...)
+        medical_record.save()
+
+    if has_permission(user, 'create_medical_record', 'doctor'):
         medical_record = MedicalRecord(...)
         medical_record.save()
 
@@ -142,12 +165,12 @@ Receives a camel case representation of a role or more than one separated by com
 
 .. function:: *filter* can
 
-Role permission filter.
+Role permission filter. Role after permission is optional.
 
 .. code-block:: python
 
     {% load permission_tags %}
-    {% if user|can:'create_medical_record' %}
+    {% if user|can:'create_medical_record:doctor' %}
         <a href="/create_record">create record</a>
     {% endif %}
 
