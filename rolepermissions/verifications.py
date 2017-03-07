@@ -6,7 +6,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from rolepermissions.roles import RolesManager
 from rolepermissions.permissions import PermissionsManager
-from rolepermissions.shortcuts import get_user_roles, get_permission
+from rolepermissions.shortcuts import retrieve_role_safely, get_user_roles, get_permission
 
 
 def has_role(user, roles):
@@ -39,10 +39,12 @@ def has_permission(user, permission_name, role=None):
     # if role and user has permission for the given role return true.
     # else go through all roles and return true only if user has
     # permission for all roles
+
     if user and user.is_superuser:
         return True
 
     if role:
+        role = retrieve_role_safely(role)
         return __has_permission__(user, permission_name, role)
     else:
         _perm = True
