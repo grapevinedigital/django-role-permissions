@@ -57,14 +57,13 @@ def remove_all_roles(user):
 def remove_role(user, role):
     # removes the given role from the user and all
     # the permissions associated with the role
-    role_cls = retrieve_role_safely(role)
+    role = retrieve_role_safely(role)
 
-    if not role_cls:
+    if not role:
         raise RoleDoesNotExist
 
-    old_group = user.groups.filter(name__exact=role_cls.get_name()).first()
+    old_group = user.groups.filter(name__exact=role.get_name()).first()
     if old_group:
-        role = RolesManager.retrieve_role(old_group.name)
         role_permissions = [role.get_permission_name(permission_name)
                             for permission_name in role.permission_names_list()]
         permissions_to_remove = Permission.objects.filter(codename__in=role_permissions)
