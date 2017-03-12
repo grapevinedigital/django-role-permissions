@@ -23,7 +23,7 @@ class PermissionsManager(object):
 
 
 def register_object_checker(name=None):
-    def fuction_decorator(func):
+    def function_decorator(func):
         checker_name = name if name else func.__name__
         PermissionsManager.register_checker(checker_name, func)
-    return fuction_decorator
+    return function_decorator
