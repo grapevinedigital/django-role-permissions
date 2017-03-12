@@ -49,14 +49,29 @@ class AbstractUserRole(object):
         return camelToSnake(cls.__name__)
 
     @classmethod
-    def get_permission_name(cls, permission_name):
+    def get_available_permissions(cls):
+        return getattr(cls, 'available_permissions', {})
+
+    @classmethod
+    def get_available_permissions_names_list(cls):
+        available_permissions = getattr(cls, 'available_permissions', {})
+        return [key for (key, value) in available_permissions.items()]
+
+    @classmethod
+    def get_permission_db_name(cls, permission_name):
         return "{0}.{1}".format(cls.get_name(), permission_name)
+
+    @classmethod
+    def get_available_permission_db_names_list(cls):
+        available_permissions = getattr(cls, 'available_permissions', {})
+        return [cls.get_permission_db_name(key) for (key, value) in available_permissions.items()]
+
+
 
     @classmethod
     def assign_role_to_user(cls, user):
         """
-        Deletes all of user's previous roles, and removes all permissions
-        mentioned in their available_permissions property.
+        Assigns a role the user.
 
         :returns: :py:class:`django.contrib.auth.models.Group` The group for the
             new role.
@@ -72,16 +87,30 @@ class AbstractUserRole(object):
 
         return group
 
+
     @classmethod
-    def permission_names_list(cls):
-        available_permissions = getattr(cls, 'available_permissions', {})
-        return [key for (key, value) in available_permissions.items()]
+    def remove_role_from_user(cls, user):
+        """
+        Deletes role from user.
+
+        :returns: :py:class:`django.contrib.auth.models.Group` if the role was in the user's roles or None.
+
+        :return:
+        """
+        group = Group.objects.get(name=cls.get_name())
+        if group:
+            permissions = Permission.objects.filter(codename__in=cls.get_available_permission_db_names_list())
+            user.user_permissions.remove(*permissions)
+            user.groups.remove(group)
+            return group
+
+        return None
 
     @classmethod
     def get_default_true_permissions(cls):
         if hasattr(cls, 'available_permissions'):
 
-            permission_names = [cls.get_permission_name(key)
+            permission_names = [cls.get_permission_db_name(key)
                                 for (key, default) in cls.available_permissions.items() if default]
 
             return cls.get_or_create_permissions(permission_names)
