@@ -47,8 +47,8 @@ def remove_all_roles(user):
     groups = user.groups.filter(name__in=registered_roles.keys())
     for group in groups:  # Normally there is only one, but remove all other role groups
         role = RolesManager.retrieve_role(group.name)
-        group_permissions = [role.get_permission_name(permission_name)
-                             for permission_name in role.permission_names_list()]
+        group_permissions = [role.get_permission_db_name(permission_name)
+                             for permission_name in role.get_available_permission_db_names_list()]
         permissions_to_remove = Permission.objects.filter(codename__in=group_permissions).all()
         user.user_permissions.remove(*permissions_to_remove)
     user.groups.remove(*groups)
@@ -64,8 +64,8 @@ def remove_role(user, role):
 
     old_group = user.groups.filter(name__exact=role.get_name()).first()
     if old_group:
-        role_permissions = [role.get_permission_name(permission_name)
-                            for permission_name in role.permission_names_list()]
+        role_permissions = [role.get_permission_db_name(permission_name)
+                            for permission_name in role.get_available_permission_db_names_list()]
         permissions_to_remove = Permission.objects.filter(codename__in=role_permissions)
         user.user_permissions.remove(*permissions_to_remove)
         user.groups.remove(old_group)
@@ -92,7 +92,7 @@ def available_perm_status(user):
 
     if roles:
         for role in roles:
-            permission_names = role.permission_names_list()
+            permission_names = role.get_available_permission_db_names_list()
             for permission_name in permission_names:
                 has_perm = has_permission(user, permission_name, role)
                 permission_hash\
@@ -120,15 +120,15 @@ def grant_permission(user, permission_name, role=None):
         if not role_cls:
             raise RoleDoesNotExist
 
-        if role_cls in roles and permission_name in role_cls.permission_names_list():
+        if role_cls in roles and permission_name in role_cls.get_available_permission_db_names_list():
             permission = get_permission(
-                role_cls.get_permission_name(permission_name))
+                role_cls.get_permission_db_name(permission_name))
             user.user_permissions.add(permission)
             return True
     else:
         for role in roles:
             permission = get_permission(
-                role.get_permission_name(permission_name))
+                role.get_permission_db_name(permission_name))
             user.user_permissions.add(permission)
         return True
 
@@ -151,9 +151,9 @@ def revoke_permission(user, permission_name, role=None):
         if not role_cls:
             raise RoleDoesNotExist
 
-        if role_cls in roles and role_cls in roles and permission_name in role_cls.permission_names_list():
+        if role_cls in roles and role_cls in roles and permission_name in role_cls.get_available_permission_db_names_list():
             permission = get_permission(
-                role_cls.get_permission_name(permission_name))
+                role_cls.get_permission_db_name(permission_name))
             user.user_permissions.remove(permission)
 
             return True
@@ -161,8 +161,8 @@ def revoke_permission(user, permission_name, role=None):
         return False
     else:
         for role in roles:
-            if permission_name in role.permission_names_list():
+            if permission_name in role.get_available_permission_db_names_list():
                 permission = get_permission(
-                    role.get_permission_name(permission_name))
+                    role.get_permission_db_name(permission_name))
                 user.user_permissions.remove(permission)
         return True

@@ -85,9 +85,9 @@ def has_permission(user, permission_name, role=None):
 
 
 def __has_permission__(user, permission_name, role):
-    if role and permission_name in role.permission_names_list():
+    if role and permission_name in role.get_available_permissions_names_list():
         permission = get_permission(
-            role.get_permission_name(permission_name))
+            role.get_permission_db_name(permission_name))
 
         if permission in user.user_permissions.all():
             return True
