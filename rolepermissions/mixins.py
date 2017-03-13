@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from .decorators import has_permission_decorator, has_role_decorator
+from .decorators import has_permission_decorator, has_permission_for_role_decorator, has_role_decorator
 
 
 class HasRoleMixin(object):
@@ -20,4 +20,15 @@ class HasPermissionsMixin(object):
         permission = self.required_permission
         return (has_permission_decorator(permission)
             (super(HasPermissionsMixin, self).dispatch)
+                (request, *args, **kwargs))
+
+class HasPermissionsForRoleMixin(object):
+    required_permission = ''
+    required_role = ''
+
+    def dispatch(self, request, *args, **kwargs):
+        permission = self.required_permission
+        role = self.required_role
+        return (has_permission_for_role_decorator(permission, role)
+            (super(HasPermissionsForRoleMixin, self).dispatch)
                 (request, *args, **kwargs))
