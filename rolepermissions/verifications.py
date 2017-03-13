@@ -59,7 +59,7 @@ def has_permission(user, permission_name, role=None):
     # if superuser return true.
     # if role and user has permission for the given role return true.
     # else go through all roles and return true only if user has
-    # permission for all roles
+    # permission for all roles that have the permission in their list.
 
     if not user:
         return False
@@ -67,31 +67,40 @@ def has_permission(user, permission_name, role=None):
     if user.is_superuser:
         return True
 
+    if not permission_name:
+        return False
+
     if role:
         role = retrieve_role_safely(role)
-        return __has_permission__(user, permission_name, role)
-    else:
-        user_roles = get_user_roles(user)
+        return __has_permission_for_role__(user, permission_name, role)
 
-        if len(user_roles) == 0:
-            return False
+    return __has_permission__(user, permission_name)
 
-        _perm = True
+def __has_permission_for_role__(user, permission_name, role):
+    permission = get_permission(
+        role.get_permission_db_name(permission_name))
 
-        for role in user_roles:
-            _perm = _perm and __has_permission__(user, permission_name, role)
+    if permission in user.user_permissions.all():
+        return True
 
-        return _perm
-
-
-def __has_permission__(user, permission_name, role):
-    if role and permission_name in role.get_available_permissions_names_list():
-        permission = get_permission(
-            role.get_permission_db_name(permission_name))
-
-        if permission in user.user_permissions.all():
-            return True
     return False
+
+def __has_permission__(user, permission_name):
+    user_roles = get_user_roles(user)
+
+    if len(user_roles) == 0:
+        return False
+
+    permission_in_role_count = 0
+    permission_true_in_role_count = 0
+    for role in user_roles:
+        if permission_name in role.get_available_permissions_names_list():
+            permission_in_role_count += 1
+        if __has_permission_for_role__(user, permission_name, role):
+            permission_true_in_role_count += 1
+
+    return permission_in_role_count != 0 and \
+           permission_in_role_count == permission_true_in_role_count
 
 
 def has_object_permission(checker_name, user, obj):

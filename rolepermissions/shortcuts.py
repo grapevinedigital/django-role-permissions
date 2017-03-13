@@ -92,7 +92,7 @@ def available_perm_status(user):
 
     if roles:
         for role in roles:
-            permission_names = role.get_available_permission_db_names_list()
+            permission_names = role.get_available_permissions_names_list()
             for permission_name in permission_names:
                 has_perm = has_permission(user, permission_name, role)
                 permission_hash\
@@ -112,25 +112,27 @@ def grant_permission(user, permission_name, role=None):
         return False
 
     if role:
-        role_cls = role
-
-        if not inspect.isclass(role):
-            role_cls = retrieve_role(role)
+        role_cls = retrieve_role_safely(role)
 
         if not role_cls:
             raise RoleDoesNotExist
 
-        if role_cls in roles and permission_name in role_cls.get_available_permission_db_names_list():
+        if role_cls in roles and permission_name in role_cls.get_available_permissions_names_list():
             permission = get_permission(
                 role_cls.get_permission_db_name(permission_name))
             user.user_permissions.add(permission)
             return True
+
+        return False
     else:
+        permissions_granted_count = 0
         for role in roles:
-            permission = get_permission(
-                role.get_permission_db_name(permission_name))
-            user.user_permissions.add(permission)
-        return True
+            if permission_name in role.get_available_permissions_names_list():
+                permission = get_permission(
+                    role.get_permission_db_name(permission_name))
+                user.user_permissions.add(permission)
+                permissions_granted_count += 1
+        return permissions_granted_count > 0
 
 
 def revoke_permission(user, permission_name, role=None):
@@ -160,9 +162,11 @@ def revoke_permission(user, permission_name, role=None):
 
         return False
     else:
+        permissions_revoked_count = 0
         for role in roles:
-            if permission_name in role.get_available_permission_db_names_list():
+            if permission_name in role.get_available_permissions_names_list():
                 permission = get_permission(
                     role.get_permission_db_name(permission_name))
                 user.user_permissions.remove(permission)
-        return True
+                permissions_revoked_count += 1
+        return permissions_revoked_count > 0
