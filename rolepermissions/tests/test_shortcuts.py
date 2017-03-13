@@ -226,3 +226,41 @@ class RetrieveRole(TestCase):
     def test_retrieve_unknown_role(self):
         role = retrieve_role('unknown_role')
         self.assertIsNone(role)
+
+
+class Buyer(AbstractUserRole):
+    available_permissions = {
+        'offersale_can_create': True,
+        'offer_can_read': True,
+        'admin_can_update': True,
+        'admin_can_delete': True,
+    }
+class AdminReadOnly(AbstractUserRole):
+    available_permissions = {
+        'admin_can_create': False,
+        'admin_can_read': True,
+        'admin_can_update': False,
+        'admin_can_delete': False,
+    }
+
+# This maybe should be passed to giaola apps
+class ExtremeCases(TestCase):
+
+    def setUp(self):
+        pass
+
+    def test_has_permission_with_two_roles(self):
+        user = mommy.make(get_user_model())
+
+        assign_role(user, 'buyer')
+
+        self.assertEquals(get_user_roles(user), [Buyer])
+        self.assertTrue(has_permission(user,'offersale_can_create'))
+
+        assign_role(user, 'admin_read_only')
+
+        self.assertEquals(set(get_user_roles(user)), set([Buyer, AdminReadOnly]))
+        self.assertTrue(has_permission(user, 'offersale_can_create'))
+
+    def tearDown(self):
+        pass
