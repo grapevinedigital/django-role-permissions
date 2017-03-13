@@ -6,6 +6,7 @@ from model_mommy import mommy
 
 from rolepermissions.roles import RolesManager, AbstractUserRole
 from rolepermissions.templatetags.permission_tags import has_role_template_tag
+from rolepermissions.exceptions import RoleDoesNotExist
 
 
 class TemRole1(AbstractUserRole):
@@ -34,6 +35,9 @@ class HasRoleTests(TestCase):
         self.user = mommy.make(get_user_model())
 
         TemRole1.assign_role_to_user(self.user)
+        # Use this to simulate register
+        TemRole3.assign_role_to_user(self.user)
+        TemRole3.remove_role_from_user(self.user)
 
     def tag_test(self, template, context, output):
         t = Template('{% load permission_tags %}'+template)
@@ -92,3 +96,27 @@ class HasRoleTests(TestCase):
 
         self.tag_test(template, context, output)
 
+    def test_has_permission_with_role(self):
+        user = self.user
+
+        template = '{% if user|can:"permission1:tem_role1" %}passed{% endif %}'
+
+        context = {
+            'user': user
+        }
+
+        output = 'passed'
+
+        self.tag_test(template, context, output)
+
+    def test_has_permission_not_in_role(self):
+        user = self.user
+
+        template = '{% if user|can:"permission1:new_name" %}passed{% endif %}'
+
+        context = {
+            'user': user
+        }
+
+        output = ''
+        self.tag_test(template, context, output)

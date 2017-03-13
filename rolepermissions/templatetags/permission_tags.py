@@ -23,7 +23,7 @@ def can_template_tag(user, args):
     args = args.split(":")
     permission = args[0]
     role=None
-    if len(args) > 0:
+    if len(args) > 1:
         role = retrieve_role_safely(args[1])
 
         if not role:
