@@ -7,7 +7,7 @@ from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
 
 from rolepermissions.roles import RolesManager
-from rolepermissions.verifications import has_role, has_permission
+from rolepermissions.verifications import has_role, has_roles, has_permission
 
 
 def has_role_decorator(role):
@@ -17,6 +17,21 @@ def has_role_decorator(role):
             user = request.user
             if user.is_authenticated():
                 if has_role(user, role):
+                    return dispatch(request, *args, **kwargs)
+            if hasattr(settings, 'ROLEPERMISSIONS_REDIRECT_TO_LOGIN'):
+                return redirect_to_login(request.get_full_path())
+            raise PermissionDenied
+        return wrapper
+    return request_decorator
+
+
+def has_roles_decorator(roles):
+    def request_decorator(dispatch):
+        @wraps(dispatch)
+        def wrapper(request, *args, **kwargs):
+            user = request.user
+            if user.is_authenticated():
+                if has_roles(user, roles):
                     return dispatch(request, *args, **kwargs)
             if hasattr(settings, 'ROLEPERMISSIONS_REDIRECT_TO_LOGIN'):
                 return redirect_to_login(request.get_full_path())
