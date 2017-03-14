@@ -88,6 +88,24 @@ from each role that contains it.
     >>> True
 
 
+.. function:: get_permission_value(user, permission_name, role=None)
+
+Get a permission value for the given role. If no role passed, it will iterate through all roles to retrieve the max value
+for the permission from each role that contains it.
+
+.. code-block:: python
+
+    from rolepermissions.shortcuts import get_permission_value
+
+    class LimitedRole(AbstractUserRole):
+        available_permissions = { 'permission_limit':100 }
+
+    get_permission_value(user, 'permission_limit', 'limited_role')
+    >>> 100
+    get_permission_value(user, 'permission_limit')
+    >>> 100
+
+
 Permission and role verification
 ================================
 
