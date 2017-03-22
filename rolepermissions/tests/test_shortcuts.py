@@ -8,7 +8,7 @@ from rolepermissions.shortcuts import (
     get_user_roles, grant_permission,
     revoke_permission, retrieve_role,
     available_perm_status, assign_role,
-    remove_role, get_permission_value
+    remove_role, limit_passed
 )
 from rolepermissions.verifications import has_permission
 from rolepermissions.exceptions import RoleDoesNotExist
@@ -36,12 +36,14 @@ class ShoRole3(AbstractUserRole):
     }
 
 
-class PermissionValueRole(AbstractUserRole):
-    role_name = 'permission_role'
+class LimitedRole(AbstractUserRole):
     available_permissions = {
-        'permission_limit': 100,
+        'permission5': False,
         'permission6': False,
-        'permission7': True
+    }
+    limits = {
+        'model:attribute': 10,
+        'general_limit': 100
     }
 
 
@@ -219,40 +221,42 @@ class RevokePermissionTests(TestCase):
         self.assertFalse(revoke_permission(user, 'permission1'))
 
 
-class GetPermissionValueTests(TestCase):
+class LimitReachedTests(TestCase):
+
     def setUp(self):
         self.user = mommy.make(get_user_model())
-        self.user_role = PermissionValueRole.assign_role_to_user(self.user)
+        LimitedRole.assign_role_to_user(self.user)
 
-    def test_has_permission(self):
-        self.assertTrue(has_permission(self.user, 'permission_limit'))
+    def test_limit_passed(self):
+        self.assertTrue(limit_passed(self.user, 'model:attribute', 11))
+        self.assertTrue(limit_passed(self.user, 'model:attribute', 11, LimitedRole.get_name()))
 
-    def test_get_permission_value(self):
-        self.assertEqual(100, get_permission_value(self.user, 'permission_limit'))
-
-    def test_get_permission_value_nonexistent_permission(self):
-        self.assertEqual(None, get_permission_value(self.user, 'permission__'))
-
-    def test_get_permission_value_for_role(self):
-        self.assertEqual(100, get_permission_value(self.user, 'permission_limit', 'permission_role'))
-
-    def test_get_permission_value_for_role_nonexistent_permission(self):
-        self.assertEqual(None, get_permission_value(self.user, 'permission__', 'permission_role'))
-
-    def test_get_permission_value_for_unassigned_role(self):
-        self.assertEqual(None, get_permission_value(self.user, 'permission__', 'sho_new_name'))
-
-    def test_get_permission_value_for_nonexistent_role(self):
+    def test_limit_passed_false(self):
+        self.assertFalse(limit_passed(self.user, 'model:attribute', 5))
+        self.assertFalse(limit_passed(self.user, 'model:attribute', 5, LimitedRole.get_name()))
+    
+    def test_limit_passed_equals_to_value(self):
+        self.assertFalse(limit_passed(self.user, 'model:attribute', 10))
+        self.assertFalse(limit_passed(self.user, 'model:attribute', 10, LimitedRole.get_name()))
+        
+    def test_limit_passed_role_not_in_roles(self):
         with self.assertRaises(RoleDoesNotExist):
-            get_permission_value(self.user, 'permission_limit', 'nonexistent_role')
+            limit_passed(self.user, 'model:attribute', 5, ShoRole3.get_name())
 
-    def test_get_permission_value_for_nonexistent_role_and_permission(self):
+    def test_limit_passed_user_without_roles(self):
+        remove_role(self.user, LimitedRole.get_name())
         with self.assertRaises(RoleDoesNotExist):
-            get_permission_value(self.user, 'permission__', 'nonexistent_role')
+            limit_passed(self.user, 'model:attribute', 5)
 
-    def test_get_permission_value_user_without_role(self):
-        remove_role(self.user, 'permission_role')
-        self.assertEqual(None, get_permission_value(self.user, 'permission__'))
+        with self.assertRaises(RoleDoesNotExist):
+            limit_passed(self.user, 'model:attribute', 5, LimitedRole.get_name())
+
+    def test_limit_passed_role_without_limits(self):
+        ShoRole3.assign_role_to_user(self.user)
+        remove_role(self.user, LimitedRole.get_name())
+
+        self.assertFalse(limit_passed(self.user, 'model:attribute', 1000, ShoRole3.get_name()))
+        self.assertFalse(limit_passed(self.user, 'model:attribute', 1000))
 
 
 class RetrieveRole(TestCase):
@@ -290,6 +294,7 @@ class AdminReadOnly(AbstractUserRole):
         'admin_can_update': False,
         'admin_can_delete': False,
     }
+
 
 # This maybe should be passed to giaola apps
 class ExtremeCases(TestCase):
