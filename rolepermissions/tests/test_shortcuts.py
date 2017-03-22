@@ -8,7 +8,7 @@ from rolepermissions.shortcuts import (
     get_user_roles, grant_permission,
     revoke_permission, retrieve_role,
     available_perm_status, assign_role,
-    remove_role
+    remove_role, get_permission_value
 )
 from rolepermissions.verifications import has_permission
 from rolepermissions.exceptions import RoleDoesNotExist
@@ -36,6 +36,15 @@ class ShoRole3(AbstractUserRole):
     }
 
 
+class PermissionValueRole(AbstractUserRole):
+    role_name = 'permission_role'
+    available_permissions = {
+        'permission_limit': 100,
+        'permission6': False,
+        'permission7': True
+    }
+
+
 class AssignRole(TestCase):
 
     def setUp(self):
@@ -60,6 +69,7 @@ class AssignRole(TestCase):
 
         with self.assertRaises(RoleDoesNotExist):
             assign_role(user, 'no role')
+
 
 class RemoveRole(TestCase):
 
@@ -209,6 +219,42 @@ class RevokePermissionTests(TestCase):
         self.assertFalse(revoke_permission(user, 'permission1'))
 
 
+class GetPermissionValueTests(TestCase):
+    def setUp(self):
+        self.user = mommy.make(get_user_model())
+        self.user_role = PermissionValueRole.assign_role_to_user(self.user)
+
+    def test_has_permission(self):
+        self.assertTrue(has_permission(self.user, 'permission_limit'))
+
+    def test_get_permission_value(self):
+        self.assertEqual(100, get_permission_value(self.user, 'permission_limit'))
+
+    def test_get_permission_value_nonexistent_permission(self):
+        self.assertEqual(None, get_permission_value(self.user, 'permission__'))
+
+    def test_get_permission_value_for_role(self):
+        self.assertEqual(100, get_permission_value(self.user, 'permission_limit', 'permission_role'))
+
+    def test_get_permission_value_for_role_nonexistent_permission(self):
+        self.assertEqual(None, get_permission_value(self.user, 'permission__', 'permission_role'))
+
+    def test_get_permission_value_for_unassigned_role(self):
+        self.assertEqual(None, get_permission_value(self.user, 'permission__', 'sho_new_name'))
+
+    def test_get_permission_value_for_nonexistent_role(self):
+        with self.assertRaises(RoleDoesNotExist):
+            get_permission_value(self.user, 'permission_limit', 'nonexistent_role')
+
+    def test_get_permission_value_for_nonexistent_role_and_permission(self):
+        with self.assertRaises(RoleDoesNotExist):
+            get_permission_value(self.user, 'permission__', 'nonexistent_role')
+
+    def test_get_permission_value_user_without_role(self):
+        remove_role(self.user, 'permission_role')
+        self.assertEqual(None, get_permission_value(self.user, 'permission__'))
+
+
 class RetrieveRole(TestCase):
 
     def setUp(self):
@@ -235,6 +281,8 @@ class Buyer(AbstractUserRole):
         'admin_can_update': True,
         'admin_can_delete': True,
     }
+
+
 class AdminReadOnly(AbstractUserRole):
     available_permissions = {
         'admin_can_create': False,

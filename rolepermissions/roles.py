@@ -66,8 +66,6 @@ class AbstractUserRole(object):
         available_permissions = getattr(cls, 'available_permissions', {})
         return [cls.get_permission_db_name(key) for (key, value) in available_permissions.items()]
 
-
-
     @classmethod
     def assign_role_to_user(cls, user):
         """
@@ -86,7 +84,6 @@ class AbstractUserRole(object):
         user.user_permissions.add(*permissions_to_add)
 
         return group
-
 
     @classmethod
     def remove_role_from_user(cls, user):
@@ -134,4 +131,4 @@ class AbstractUserRole(object):
 
     @classmethod
     def get_default(cls, permission_name):
-        return cls.available_permissions[permission_name]
+        return cls.available_permissions.get(permission_name, None)
