@@ -15,6 +15,7 @@ from rolepermissions.exceptions import RoleDoesNotExist
 def retrieve_role(role_name):
     return RolesManager.retrieve_role(role_name)
 
+
 def retrieve_role_safely(role):
     role_cls = role
 
@@ -23,11 +24,12 @@ def retrieve_role_safely(role):
 
     return role_cls
 
+
 def get_user_roles(user):
     if user:
         return [RolesManager.retrieve_role(group.name)
                 for group in user.groups.filter(name__in=RolesManager.get_roles_names())]
-    return None
+    return []
 
 
 def assign_role(user, role):
@@ -170,3 +172,24 @@ def revoke_permission(user, permission_name, role=None):
                 user.user_permissions.remove(permission)
                 permissions_revoked_count += 1
         return permissions_revoked_count > 0
+
+
+def limit_passed(user, limit_name, value, role=None):
+    # check for each role of user or for the specified one that the specified permission has it's limit reached
+    roles = get_user_roles(user)
+
+    if not roles:
+        raise RoleDoesNotExist
+
+    if role:
+        role_cls = retrieve_role_safely(role)
+
+        if role_cls not in roles:
+            raise RoleDoesNotExist
+
+        limit = role_cls.get_limit(limit_name)
+    else:
+        limit = max([role_cls.get_limit(limit_name) for role_cls in roles])
+
+    # None is the smallest value in comparison, so if limit is not defined then it's not reached
+    return False if not limit else value > limit
