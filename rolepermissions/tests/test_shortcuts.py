@@ -8,7 +8,7 @@ from rolepermissions.shortcuts import (
     get_user_roles, grant_permission,
     revoke_permission, retrieve_role,
     available_perm_status, assign_role,
-    remove_role
+    remove_role, limit_passed
 )
 from rolepermissions.verifications import has_permission
 from rolepermissions.exceptions import RoleDoesNotExist
@@ -36,6 +36,17 @@ class ShoRole3(AbstractUserRole):
     }
 
 
+class LimitedRole(AbstractUserRole):
+    available_permissions = {
+        'permission5': False,
+        'permission6': False,
+    }
+    limits = {
+        'model:attribute': 10,
+        'general_limit': 100
+    }
+
+
 class AssignRole(TestCase):
 
     def setUp(self):
@@ -60,6 +71,7 @@ class AssignRole(TestCase):
 
         with self.assertRaises(RoleDoesNotExist):
             assign_role(user, 'no role')
+
 
 class RemoveRole(TestCase):
 
@@ -209,6 +221,44 @@ class RevokePermissionTests(TestCase):
         self.assertFalse(revoke_permission(user, 'permission1'))
 
 
+class LimitReachedTests(TestCase):
+
+    def setUp(self):
+        self.user = mommy.make(get_user_model())
+        LimitedRole.assign_role_to_user(self.user)
+
+    def test_limit_passed(self):
+        self.assertTrue(limit_passed(self.user, 'model:attribute', 11))
+        self.assertTrue(limit_passed(self.user, 'model:attribute', 11, LimitedRole.get_name()))
+
+    def test_limit_passed_false(self):
+        self.assertFalse(limit_passed(self.user, 'model:attribute', 5))
+        self.assertFalse(limit_passed(self.user, 'model:attribute', 5, LimitedRole.get_name()))
+    
+    def test_limit_passed_equals_to_value(self):
+        self.assertFalse(limit_passed(self.user, 'model:attribute', 10))
+        self.assertFalse(limit_passed(self.user, 'model:attribute', 10, LimitedRole.get_name()))
+        
+    def test_limit_passed_role_not_in_roles(self):
+        with self.assertRaises(RoleDoesNotExist):
+            limit_passed(self.user, 'model:attribute', 5, ShoRole3.get_name())
+
+    def test_limit_passed_user_without_roles(self):
+        remove_role(self.user, LimitedRole.get_name())
+        with self.assertRaises(RoleDoesNotExist):
+            limit_passed(self.user, 'model:attribute', 5)
+
+        with self.assertRaises(RoleDoesNotExist):
+            limit_passed(self.user, 'model:attribute', 5, LimitedRole.get_name())
+
+    def test_limit_passed_role_without_limits(self):
+        ShoRole3.assign_role_to_user(self.user)
+        remove_role(self.user, LimitedRole.get_name())
+
+        self.assertFalse(limit_passed(self.user, 'model:attribute', 1000, ShoRole3.get_name()))
+        self.assertFalse(limit_passed(self.user, 'model:attribute', 1000))
+
+
 class RetrieveRole(TestCase):
 
     def setUp(self):
@@ -235,6 +285,8 @@ class Buyer(AbstractUserRole):
         'admin_can_update': True,
         'admin_can_delete': True,
     }
+
+
 class AdminReadOnly(AbstractUserRole):
     available_permissions = {
         'admin_can_create': False,
@@ -242,6 +294,7 @@ class AdminReadOnly(AbstractUserRole):
         'admin_can_update': False,
         'admin_can_delete': False,
     }
+
 
 # This maybe should be passed to giaola apps
 class ExtremeCases(TestCase):
