@@ -8,7 +8,7 @@ from rolepermissions.shortcuts import (
     get_user_roles, grant_permission,
     revoke_permission, retrieve_role,
     available_perm_status, assign_role,
-    remove_role
+    remove_role, get_role_limit, get_permission_limit
 )
 from rolepermissions.verifications import has_permission
 from rolepermissions.exceptions import RoleDoesNotExist
@@ -34,6 +34,20 @@ class ShoRole3(AbstractUserRole):
         'permission5': False,
         'permission6': False,
     }
+
+class ShoRole4(AbstractUserRole):
+    role_limit = 111
+
+    available_permissions = {
+        'permission7': False,
+        'permission8': False,
+    }
+
+    available_permissions_limits = {
+        'permission7': 21,
+        'whatever_permission': 293
+    }
+
 
 
 class AssignRole(TestCase):
@@ -227,6 +241,24 @@ class RetrieveRole(TestCase):
         role = retrieve_role('unknown_role')
         self.assertIsNone(role)
 
+class GetRoleLimitsTest(TestCase):
+
+    def test_get_role_limit(self):
+        self.assertEqual(get_role_limit('sho_role4'), 111)
+
+    def test_get_non_existent_role_limit(self):
+        self.assertEqual(get_role_limit('sho_role2'), None)
+
+class GetPermissionLimitTest(TestCase):
+
+    def test_get_permission_limit(self):
+        self.assertEqual(get_permission_limit('sho_role4', 'permission7'), 21)
+
+    def test_get_non_existent_permission_limit(self):
+        self.assertEqual(get_permission_limit('sho_role4', 'permission9'), None)
+
+    def test_get_non_existent_permission_limit(self):
+        self.assertEqual(get_permission_limit('sho_role4', 'whatever_permission'), None)
 
 class Buyer(AbstractUserRole):
     available_permissions = {

@@ -27,6 +27,18 @@ class RolRole3(AbstractUserRole):
         'permission6': False,
     }
 
+class RolRole4(AbstractUserRole):
+    role_limit = 999
+
+    available_permissions = {
+        'permission7': False,
+        'permission8': True,
+    }
+
+    available_permissions_limits = {
+        'permission7': 10,
+        'whatever_permission': 100
+    }
 
 class AbstractUserRoleTests(TestCase):
 
@@ -233,3 +245,32 @@ class RolesManagerTests(TestCase):
     def test_retrieve_role(self):
         self.assertEquals(RolesManager.retrieve_role('rol_role1'), RolRole1)
         self.assertEquals(RolesManager.retrieve_role('rol_role2'), RolRole2)
+
+
+class RoleLimitsTests(TestCase):
+
+    def setUp(self):
+        pass
+
+    def test_retrieve_role_limit(self):
+        self.assertEquals(RolRole4.get_role_limit(), 999)
+
+    def test_retrieve_non_existent_role_limit(self):
+        self.assertEquals(RolRole1.get_role_limit(), None)
+
+
+class PermissionLimitsTests(TestCase):
+
+    def setUp(self):
+        pass
+
+    def test_retrieve_permission_limit(self):
+        self.assertEqual(RolRole4.get_permission_limit('permission7'), 10)
+
+    def test_retrieve_non_existent_permission_limit(self):
+        self.assertEqual(RolRole4.get_permission_limit('non_existent_permission'), None)
+
+    def test_retrieve_non_existent_permission_permission_limit(self):
+        self.assertEqual(RolRole4.get_permission_limit('whatever_permission'), None)
+
+
