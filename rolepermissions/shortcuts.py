@@ -15,29 +15,30 @@ from rolepermissions.exceptions import RoleDoesNotExist
 def retrieve_role(role_name):
     return RolesManager.retrieve_role(role_name)
 
-def retrieve_role_safely(role):
+
+def retrieve_role_safely(role, raise_exception=False):
     role_cls = role
 
     if not inspect.isclass(role):
         role_cls = retrieve_role(role)
 
+    if not role_cls and raise_exception:
+        raise RoleDoesNotExist
+
     return role_cls
 
+
 def get_user_roles(user):
-    if user:
-        return [RolesManager.retrieve_role(group.name)
-                for group in user.groups.filter(name__in=RolesManager.get_roles_names())]
-    return None
+    if not user:
+        return []
+
+    roles = RolesManager.get_roles_names()
+    return map(RolesManager.retrieve_role, user.groups.filter(name__in=roles).values_list('name', flat=True))
 
 
 def assign_role(user, role):
-    role_cls = retrieve_role_safely(role)
-
-    if not role_cls:
-        raise RoleDoesNotExist
-
+    role_cls = retrieve_role_safely(role, raise_exception=True)
     role_cls.assign_role_to_user(user)
-
     return role_cls
 
 
@@ -57,11 +58,7 @@ def remove_all_roles(user):
 def remove_role(user, role):
     # removes the given role from the user and all
     # the permissions associated with the role
-    role = retrieve_role_safely(role)
-
-    if not role:
-        raise RoleDoesNotExist
-
+    role = retrieve_role_safely(role, raise_exception=True)
     old_group = user.groups.filter(name__exact=role.get_name()).first()
     if old_group:
         role_permissions = [role.get_permission_db_name(permission_name)
@@ -105,21 +102,14 @@ def available_perm_status(user):
 def grant_permission(user, permission_name, role=None):
     # grants the given permission from the user
     # if a valid role is given only the permission
-    # from that role will be revoked.
+    # from that role will be granted.
     roles = get_user_roles(user)
 
-    if not roles:
-        return False
-
     if role:
-        role_cls = retrieve_role_safely(role)
-
-        if not role_cls:
-            raise RoleDoesNotExist
+        role_cls = retrieve_role_safely(role, raise_exception=True)
 
         if role_cls in roles and permission_name in role_cls.get_available_permissions_names_list():
-            permission = get_permission(
-                role_cls.get_permission_db_name(permission_name))
+            permission = get_permission(role_cls.get_permission_db_name(permission_name))
             user.user_permissions.add(permission)
             return True
 
@@ -136,7 +126,7 @@ def grant_permission(user, permission_name, role=None):
 
 
 def revoke_permission(user, permission_name, role=None):
-    # grants the given permission from the user
+    # revokes the given permission from the user
     # if a valid role is given only the permission
     # from that role will be revoked.
     roles = get_user_roles(user)
@@ -145,17 +135,10 @@ def revoke_permission(user, permission_name, role=None):
         return False
 
     if role:
-        role_cls = role
+        role_cls = retrieve_role_safely(role, raise_exception=True)
 
-        if not inspect.isclass(role):
-            role_cls = retrieve_role(role)
-
-        if not role_cls:
-            raise RoleDoesNotExist
-
-        if role_cls in roles and role_cls in roles and permission_name in role_cls.get_available_permission_db_names_list():
-            permission = get_permission(
-                role_cls.get_permission_db_name(permission_name))
+        if role_cls in roles and permission_name in role_cls.get_available_permission_db_names_list():
+            permission = get_permission(role_cls.get_permission_db_name(permission_name))
             user.user_permissions.remove(permission)
 
             return True
@@ -165,8 +148,28 @@ def revoke_permission(user, permission_name, role=None):
         permissions_revoked_count = 0
         for role in roles:
             if permission_name in role.get_available_permissions_names_list():
-                permission = get_permission(
-                    role.get_permission_db_name(permission_name))
+                permission = get_permission(role.get_permission_db_name(permission_name))
                 user.user_permissions.remove(permission)
                 permissions_revoked_count += 1
         return permissions_revoked_count > 0
+
+
+def limit_passed(user, limit_name, value, role=None):
+    # check for each role of user or for the specified one that the specified permission has it's limit reached
+    roles = get_user_roles(user)
+
+    if not roles:
+        raise RoleDoesNotExist
+
+    if role:
+        role_cls = retrieve_role_safely(role)
+
+        if role_cls not in roles:
+            raise RoleDoesNotExist
+
+        limit = role_cls.get_limit(limit_name)
+    else:
+        limit = max([role_cls.get_limit(limit_name) for role_cls in roles])
+
+    # None is the smallest value in comparison, so if limit is not defined then it's not reached
+    return False if not limit else value > limit

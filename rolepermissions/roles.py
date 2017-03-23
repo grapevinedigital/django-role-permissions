@@ -134,4 +134,8 @@ class AbstractUserRole(object):
 
     @classmethod
     def get_default(cls, permission_name):
-        return cls.available_permissions[permission_name]
+        return cls.available_permissions.get(permission_name, None)
+
+    @classmethod
+    def get_limit(cls, limit_name):
+        return getattr(cls, 'limits', {}).get(limit_name, None)
