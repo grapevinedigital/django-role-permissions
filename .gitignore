@@ -45,3 +45,8 @@ docs/_build
 
 # Pycharm files
 .idea
+
+# Pypi files
+~/.pypirc
+.pypirc
+setup.cfg
