@@ -66,7 +66,17 @@ class AbstractUserRole(object):
         available_permissions = getattr(cls, 'available_permissions', {})
         return [cls.get_permission_db_name(key) for (key, value) in available_permissions.items()]
 
+    @classmethod
+    def get_role_limit(cls):
+        return getattr(cls, 'role_limit', None)
 
+    @classmethod
+    def get_permission_limit(cls, permission_name):
+        if permission_name not in cls.get_available_permissions_names_list():
+            return None
+
+        permission_limits = getattr(cls, 'available_permissions_limits', {})
+        return permission_limits.get(permission_name, None)
 
     @classmethod
     def assign_role_to_user(cls, user):

@@ -153,7 +153,8 @@ def revoke_permission(user, permission_name, role=None):
         if not role_cls:
             raise RoleDoesNotExist
 
-        if role_cls in roles and role_cls in roles and permission_name in role_cls.get_available_permission_db_names_list():
+        if role_cls in roles and role_cls in roles and \
+                permission_name in role_cls.get_available_permission_db_names_list():
             permission = get_permission(
                 role_cls.get_permission_db_name(permission_name))
             user.user_permissions.remove(permission)
@@ -170,3 +171,20 @@ def revoke_permission(user, permission_name, role=None):
                 user.user_permissions.remove(permission)
                 permissions_revoked_count += 1
         return permissions_revoked_count > 0
+
+def get_role_limit(role):
+    role = retrieve_role_safely(role)
+
+    if not role:
+        raise RoleDoesNotExist
+
+    return role.get_role_limit()
+
+def get_permission_limit(role, permission_name):
+    role = retrieve_role_safely(role)
+
+    if not role:
+        raise RoleDoesNotExist
+
+    return role.get_permission_limit(permission_name)
+
