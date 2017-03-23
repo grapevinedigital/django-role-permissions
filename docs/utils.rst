@@ -126,6 +126,31 @@ that has the permission in the available_permissions list.
         medical_record = MedicalRecord(...)
         medical_record.save()
 
+.. _role-limit:
+
+.. py:function:: get_role_limit(role)
+
+Receives the role or a string (role name) and returns the limit for that role. Limit can be anything.
+
+.. code-block:: python
+
+    from rolepermissions.shortcuts import get_role_limit
+
+    permission_limit = get_permission_limit('doctor')
+
+.. _available-permission-limit:
+
+.. py:function:: def get_permission_limit(role, permission_name)
+
+Receives the role or a string (role name) and the permission_name and returns the limit for the permission or none
+if it hasn't been declared.
+
+.. code-block:: python
+
+    from rolepermissions.shortcuts import get_permission_limit
+
+    permission_limit = get_permission_limit('doctor', 'create_medical_record')
+
 .. _has-object-permission:
 
 .. function:: has_object_permission(checker_name, user, obj)
