@@ -6,7 +6,6 @@ from model_mommy import mommy
 
 from rolepermissions.roles import RolesManager, AbstractUserRole
 
-
 class RolRole1(AbstractUserRole):
     available_permissions = {
         'permission1': True,
@@ -27,10 +26,6 @@ class RolRole3(AbstractUserRole):
         'permission5': False,
         'permission6': False,
     }
-
-
-class RolRoleLimited(AbstractUserRole):
-    limits = {'model:attribute': 100}
 
 
 class AbstractUserRoleTests(TestCase):
@@ -228,11 +223,6 @@ class AbstractUserRoleTests(TestCase):
 
         self.assertIn('rol_role2.permission3', RolRole2.get_available_permission_db_names_list())
         self.assertIn('rol_role2.permission4', RolRole2.get_available_permission_db_names_list())
-
-    def test_get_limit(self):
-        self.assertEquals(100, RolRoleLimited.get_limit('model:attribute'))
-        self.assertIsNone(RolRoleLimited.get_limit('model:attribute2'))
-        self.assertIsNone(RolRole2.get_limit('model:attribute'))
 
 
 class RolesManagerTests(TestCase):
