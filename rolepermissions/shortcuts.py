@@ -174,7 +174,7 @@ def revoke_permission(user, permission_name, role=None):
         return permissions_revoked_count > 0
 
 
-def limit_passed(user, limit_name, value, role=None):
+def get_limit(user, limit_name, role=None):
     # check for each role of user or for the specified one that the specified permission has it's limit reached
     roles = get_user_roles(user)
 
@@ -187,9 +187,15 @@ def limit_passed(user, limit_name, value, role=None):
         if role_cls not in roles:
             raise RoleDoesNotExist
 
-        limit = role_cls.get_limit(limit_name)
+        return role_cls.get_limit(limit_name)
     else:
-        limit = max([role_cls.get_limit(limit_name) for role_cls in roles])
+        return max([role_cls.get_limit(limit_name) for role_cls in roles])
 
-    # None is the smallest value in comparison, so if limit is not defined then it's not reached
-    return False if not limit else value > limit
+
+def limit_passed(user, limit_name, value, role=None):
+    try:
+        limit = get_limit(user, limit_name, role)
+        # None is the smallest value in comparison, so if limit is not defined then it's not reached
+        return False if not limit else value > limit
+    except RoleDoesNotExist:
+        return False

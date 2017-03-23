@@ -8,7 +8,7 @@ from rolepermissions.shortcuts import (
     get_user_roles, grant_permission,
     revoke_permission, retrieve_role,
     available_perm_status, assign_role,
-    remove_role, limit_passed
+    remove_role, limit_passed, get_limit
 )
 from rolepermissions.verifications import has_permission
 from rolepermissions.exceptions import RoleDoesNotExist
@@ -221,7 +221,7 @@ class RevokePermissionTests(TestCase):
         self.assertFalse(revoke_permission(user, 'permission1'))
 
 
-class LimitReachedTests(TestCase):
+class LimitPassedTests(TestCase):
 
     def setUp(self):
         self.user = mommy.make(get_user_model())
@@ -240,16 +240,13 @@ class LimitReachedTests(TestCase):
         self.assertFalse(limit_passed(self.user, 'model:attribute', 10, LimitedRole.get_name()))
         
     def test_limit_passed_role_not_in_roles(self):
-        with self.assertRaises(RoleDoesNotExist):
-            limit_passed(self.user, 'model:attribute', 5, ShoRole3.get_name())
+        self.assertFalse(limit_passed(self.user, 'model:attribute', 5, ShoRole3.get_name()))
 
     def test_limit_passed_user_without_roles(self):
         remove_role(self.user, LimitedRole.get_name())
-        with self.assertRaises(RoleDoesNotExist):
-            limit_passed(self.user, 'model:attribute', 5)
+        self.assertFalse(limit_passed(self.user, 'model:attribute', 5))
 
-        with self.assertRaises(RoleDoesNotExist):
-            limit_passed(self.user, 'model:attribute', 5, LimitedRole.get_name())
+        self.assertFalse(limit_passed(self.user, 'model:attribute', 5, LimitedRole.get_name()))
 
     def test_limit_passed_role_without_limits(self):
         ShoRole3.assign_role_to_user(self.user)
@@ -257,6 +254,39 @@ class LimitReachedTests(TestCase):
 
         self.assertFalse(limit_passed(self.user, 'model:attribute', 1000, ShoRole3.get_name()))
         self.assertFalse(limit_passed(self.user, 'model:attribute', 1000))
+
+
+class GetLimitTests(TestCase):
+    def setUp(self):
+        self.user = mommy.make(get_user_model())
+        LimitedRole.assign_role_to_user(self.user)
+
+    def test_get_limit(self):
+        self.assertEquals(10, get_limit(self.user, 'model:attribute'))
+        self.assertTrue(10, get_limit(self.user, 'model:attribute', LimitedRole.get_name()))
+
+    def test_get_limit_none(self):
+        self.assertIsNone(get_limit(self.user, 'model:attribute2'))
+        self.assertIsNone(get_limit(self.user, 'model:attribute2', LimitedRole.get_name()))
+
+    def test_get_limit_role_not_in_roles(self):
+        with self.assertRaises(RoleDoesNotExist):
+            get_limit(self.user, 'model:attribute', ShoRole3.get_name())
+
+    def test_get_limit_user_without_roles(self):
+        remove_role(self.user, LimitedRole.get_name())
+        with self.assertRaises(RoleDoesNotExist):
+            get_limit(self.user, 'model:attribute')
+
+        with self.assertRaises(RoleDoesNotExist):
+            get_limit(self.user, 'model:attribute', LimitedRole.get_name())
+
+    def test_get_limit_role_without_limits(self):
+        ShoRole3.assign_role_to_user(self.user)
+        remove_role(self.user, LimitedRole.get_name())
+
+        self.assertIsNone(get_limit(self.user, 'model:attribute', ShoRole3.get_name()))
+        self.assertIsNone(get_limit(self.user, 'model:attribute'))
 
 
 class RetrieveRole(TestCase):
