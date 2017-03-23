@@ -7,7 +7,7 @@ import os
 import sys
 
 
-package = 'rolepermissions'
+package = 'giaola_role_permissions'
 
 requirements = [
     'Django>=1.5',
@@ -63,13 +63,13 @@ if sys.argv[-1] == 'publish':
 
 
 setup(
-    name='django-role-permissions',
-    version=get_version(package),
-    url='http://github.com/vintasoftware/django-role-permissions',
+    name='giaola-role-permissions',
+    version='1.0',
+    url='https://github.com/Giaola/django-role-permissions',
     license='MIT',
     description='A django app for role based permissions.',
-    author='Filipe Ximenes',
-    author_email='filipeximenes@gmail.com',
+    author='Marsel Tzatzo',
+    author_email='tmarselg@gmail.com',
     packages=get_packages(package),
     package_data=get_package_data(package),
     install_requires=requirements,
@@ -86,6 +86,6 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
     ],
-    test_suite='rolepermissions.tests',
+    test_suite='giaola_role_permissions.tests',
     tests_require=test_requirements
 )

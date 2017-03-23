@@ -14,7 +14,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'django.contrib.admin',
 
-    'rolepermissions',
+    'giaola_role_permissions',
 )
 
 import django
