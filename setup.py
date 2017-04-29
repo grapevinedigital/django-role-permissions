@@ -64,7 +64,7 @@ if sys.argv[-1] == 'publish':
 
 setup(
     name='giaola-role-permissions',
-    version='1.0.1',
+    version='1.0.2',
     url='https://github.com/Giaola/django-role-permissions',
     license='MIT',
     description='A django app for role based permissions.',
