@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from six import add_metaclass
 
-from django.contrib.auth.models import User, Group, Permission
+from django.contrib.auth.models import Group, Permission
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 
@@ -152,4 +152,4 @@ class AbstractUserRole(object):
         Finds all users that have this role.
         :return:            QuerySet with all users that have the role.
         """
-        return User.objects.filter(groups__name=cls.get_name())
+        return get_user_model().objects.filter(groups__name=cls.get_name())
