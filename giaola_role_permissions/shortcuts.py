@@ -9,11 +9,26 @@ from django.contrib.auth import get_user_model
 from giaola_role_permissions.roles import RolesManager, registered_roles
 from giaola_role_permissions.exceptions import RoleDoesNotExist
 
+# Users
+
+def get_users_for_role(role):
+    """
+    Finds all users that have the given role
+    :param role:        Role name or role class
+    :return:            QuerySet with all users that have the role.
+    """
+    role_cls = retrieve_role_safely(role)
+
+    if not role_cls:
+        raise RoleDoesNotExist
+
+    return role_cls.get_users()
 
 # Roles
 
 def retrieve_role(role_name):
     return RolesManager.retrieve_role(role_name)
+
 
 def retrieve_role_safely(role):
     role_cls = role
@@ -22,6 +37,7 @@ def retrieve_role_safely(role):
         role_cls = retrieve_role(role)
 
     return role_cls
+
 
 def get_user_roles(user):
     if user:
@@ -72,7 +88,6 @@ def remove_role(user, role):
 
 
 # Permissions
-
 
 def get_permission(permission_name):
     user_ct = ContentType.objects.get_for_model(get_user_model())
@@ -172,6 +187,7 @@ def revoke_permission(user, permission_name, role=None):
                 permissions_revoked_count += 1
         return permissions_revoked_count > 0
 
+
 def get_role_limit(role):
     role = retrieve_role_safely(role)
 
@@ -180,6 +196,7 @@ def get_role_limit(role):
 
     return role.get_role_limit()
 
+
 def get_permission_limit(role, permission_name):
     role = retrieve_role_safely(role)
 
@@ -187,4 +204,3 @@ def get_permission_limit(role, permission_name):
         raise RoleDoesNotExist
 
     return role.get_permission_limit(permission_name)
-
