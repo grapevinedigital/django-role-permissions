@@ -13,7 +13,6 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.admin',
-
     'giaola_role_permissions',
 )
 
