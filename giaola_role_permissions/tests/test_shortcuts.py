@@ -5,7 +5,7 @@ from model_mommy import mommy
 
 from giaola_role_permissions.roles import RolesManager, AbstractUserRole
 from giaola_role_permissions.shortcuts import (
-    get_user_roles, grant_permission,
+    get_users_for_role, get_user_roles, grant_permission,
     revoke_permission, retrieve_role,
     available_perm_status, assign_role,
     remove_role, get_role_limit, get_permission_limit
@@ -47,6 +47,34 @@ class ShoRole4(AbstractUserRole):
         'permission7': 21,
         'whatever_permission': 293
     }
+
+
+class RetrieveUsersWithPermissionsTestCase(TestCase):
+
+    def setUp(self):
+        self.user_1 = mommy.make(get_user_model())
+        self.user_2 = mommy.make(get_user_model())
+        self.user_3 = mommy.make(get_user_model())
+
+    def test_get_users_with_non_existing_role(self):
+        with self.assertRaises(RoleDoesNotExist):
+            get_users_for_role('no role')
+
+    def test_get_users_with_role(self):
+        assign_role(self.user_1, ShoRole1)
+
+        users = get_users_for_role(ShoRole1)
+
+        self.assertEqual(len(users), 1)
+        self.assertEqual(list(users)[0], self.user_1)
+
+    def test_get_users_with_role_name(self):
+        assign_role(self.user_1, ShoRole1)
+
+        users = get_users_for_role('sho_role1')
+
+        self.assertEqual(len(users), 1)
+        self.assertEqual(list(users)[0], self.user_1)
 
 
 

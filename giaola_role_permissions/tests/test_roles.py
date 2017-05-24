@@ -236,6 +236,65 @@ class AbstractUserRoleTests(TestCase):
         self.assertIn('rol_role2.permission3', RolRole2.get_available_permission_db_names_list())
         self.assertIn('rol_role2.permission4', RolRole2.get_available_permission_db_names_list())
 
+    def test_get_users_invalid_role(self):
+        users = RolRole1.get_users()
+
+        self.assertEqual(len(users), 0)
+
+    def test_get_users_with_role(self):
+        user = mommy.make(get_user_model())
+
+        RolRole1.assign_role_to_user(user)
+        users = RolRole1.get_users()
+
+        self.assertEqual(len(users), 1)
+        self.assertEqual(list(users)[0], user)
+
+    def test_get_multiple_users_with_role(self):
+        user1 = mommy.make(get_user_model())
+        user2 = mommy.make(get_user_model())
+        user3 = mommy.make(get_user_model())
+
+        RolRole1.assign_role_to_user(user1)
+        RolRole1.assign_role_to_user(user2)
+        RolRole2.assign_role_to_user(user2)
+        RolRole2.assign_role_to_user(user3)
+
+
+        users = RolRole1.get_users()
+
+        self.assertEqual(len(users), 2)
+        self.assertIn(user1, users)
+        self.assertIn(user2, users)
+
+        users = RolRole2.get_users()
+        self.assertEqual(len(users), 2)
+        self.assertIn(user2, users)
+        self.assertIn(user3, users)
+
+    def test_get_users_with_role_after_role_removal(self):
+        user1 = mommy.make(get_user_model())
+        user2 = mommy.make(get_user_model())
+        user3 = mommy.make(get_user_model())
+
+        RolRole1.assign_role_to_user(user1)
+        RolRole1.assign_role_to_user(user2)
+        RolRole1.assign_role_to_user(user3)
+
+        users = RolRole1.get_users()
+
+        self.assertEqual(len(users), 3)
+        self.assertIn(user1, users)
+        self.assertIn(user2, users)
+        self.assertIn(user3, users)
+
+        RolRole1.remove_role_from_user(user1)
+        RolRole1.remove_role_from_user(user3)
+
+        users = RolRole1.get_users()
+
+        self.assertEqual(len(users), 1)
+        self.assertIn(user2, users)
 
 class RolesManagerTests(TestCase):
 
