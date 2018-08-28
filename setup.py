@@ -10,7 +10,7 @@ import sys
 package = 'giaola_role_permissions'
 
 requirements = [
-    'Django >=1.5, <=1.11',
+    'Django>=1.5',
     'django-discover-runner',
     'six',
 ]
