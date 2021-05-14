@@ -32,7 +32,7 @@ def can_template_tag(user, args):
     return has_permission(user, permission, role)
 
 
-@register.assignment_tag(name='can', takes_context=True)
+@register.simple_tag(name='can', takes_context=True)
 def has_permission_template_tag(context, permission, obj, user=None):
     if not user:
         user = context.get('user')
